@@ -12,11 +12,10 @@ ms.reviewer: jswymer
 
 [!INCLUDE[azure-ad-to-microsoft-entra-id](~/../shared-content/shared/azure-ad-to-microsoft-entra-id.md)]
 
-Service-to-Service (S2S) authentication is suited for scenarios where integrations are required to run without any user interaction. S2S authentication uses the [Client Credentials OAuth 2.0 Flow](/azure/active-directory/develop/v2-oauth2-client-creds-grant-flow). This flow enables you to access resources by using the identity of an application.
+Service-to-Service (S2S) authentication is suited for scenarios where integrations are required to run without any user interaction. S2S authentication uses the [Client Credentials OAuth 2.0 Flow](/azure/active-directory/develop/v2-oauth2-client-creds-grant-flow). This flow enables you to access resources by using the identity of an application. For workloads running in Azure, it is strongly recommended to use Managed Identities (MIs) with Federated Identity Credentials (FIC) for authentication. This allows your Azure service to access APIs securely without managing secrets or certificates.
 
 > [!NOTE]
 > For more information about OAuth 2.0 flows, see [OAuth 2.0 and OpenID Connect protocols on the Microsoft identity platform](/azure/active-directory/develop/active-directory-v2-protocols) in the Microsoft Entra ID documentation.
-
 
 In contrast, OAuth delegate flows, like [authorization code](/azure/active-directory/develop/v2-oauth2-auth-code-flow), [implicit grant flow](/azure/active-directory/develop/v2-oauth2-implicit-grant-flow) and [resource owner password credentials](/azure/active-directory/develop/v2-oauth-ropc) can be configured to require multifactor authentication (MFA). This configuration prevents integration from running unattended, because MFA is required to acquire the access token from Microsoft Entra ID. 
 
@@ -88,18 +87,18 @@ Complete these steps to register an application in your Microsoft Entra tenant f
 
     When completed, an **Overview** displays in the portal for the new application.
 
+3. Add application credentials to your Application
     > [!NOTE]
-    > Copy the **Application (client) ID** of the registered application. You need this value later. You can get this value from the **Overview** page.
-
-3. Create a client secret for the registered application as follows:
-
-    1. Select **Certificates & secrets** > **New client secret**.
-    2. Add a description, select a duration, and select **Add**.
-
-    > [!NOTE]
-    > Copy the secret's value for use in your client application code. This secret value is never displayed again after you leave this page.
-
-    Learn more about in [Add a client secret](/entra/identity-platform/how-to-add-credentials?tabs=client-secret) in the Microsoft Entra documentation.
+    > Using Managed Identity with Federated Identity Credentials is the recommended and most secure method for Azure-hosted workloads. Only use secret or certificate-based authentication if Managed Identity is not available.
+    1. If your workload runs in Azure (for example, Azure App Service, Azure Functions, Azure VMs, or Azure Logic Apps), use a **Managed Identity** with **Federated Identity Credentials (FIC)** for authentication. This approach eliminates the need for secrets and is more secure.
+        1. Create **Managed Identity** in the same Microsoft Entra tenant as the application
+        2. Assign the Managed Identity to the Azure Resource that will authenticate
+        3. In your Microsoft Entra application registration, select **Certificates & secrets** > **Federated credentials** > **Add credential**, to add the Managed Identity as Federated Identity Credential
+    1. Only if Managed Identities are not supported for your scenario, create a client secret for the registered application as follows:
+        1. Select **Certificates & secrets** > **New client secret**.
+        2. Add a description, select a duration, and select **Add**.
+        > [!NOTE]
+        > Copy the secret's value for use in your client application code. This secret value is never displayed again after you leave this page.
 
 4. Grant the registered application **API.ReadWrite.All** and **Automation.ReadWrite.All** permission to the **Dynamics 365 [!INCLUDE [prod_short](../developer/includes/prod_short.md)]** API as follows:
 
