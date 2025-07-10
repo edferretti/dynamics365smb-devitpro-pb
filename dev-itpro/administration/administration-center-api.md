@@ -49,21 +49,23 @@ The [!INCLUDE[prodadmincenter](../developer/includes/prodadmincenter.md)] API su
 
     When completed, an **Overview** displays in the portal for the new application.
 
-  > [!NOTE]
-  > Copy the **Application (client) ID** of the registered app. You'll need this later. You can get this value from the **Overview** page.
-
-1. Create a client secret for the registered application as follows:
-
-    1. Select **Certificates & secrets** > **New client secret**.
-    2. Add a description, select a duration, and select **Add**.
-
     > [!NOTE]
-    > Copy the secret's value for use in your client application code. This secret value is never displayed again after you leave this page.
+    > Copy the **Application (client) ID** of the registered app. You'll need this later. You can get this value from the **Overview** page.
+
+1. Add application credentials to your Application
+    > [!NOTE]
+    > Using Managed Identity with Federated Identity Credentials is the recommended and most secure method for Azure-hosted workloads. Only use secret or certificate-based authentication if Managed Identity is not available.
+    1. If your workload runs in Azure (for example, Azure App Service, Azure Functions, Azure VMs, or Azure Logic Apps), use a **Managed Identity** with **Federated Identity Credentials (FIC)** for authentication. This approach eliminates the need for secrets and is more secure.
+        1. Create **Managed Identity** in the same Microsoft Entra tenant as the application
+        2. Assign the Managed Identity to the Azure Resource that will run the code that calls the [!INCLUDE[prodadmincenter](../developer/includes/prodadmincenter.md)] API
+        3. In your Microsoft Entra application registration, select **Certificates & secrets** > **Federated credentials** > **Add credential**, to add the Managed Identity as Federated Identity Credential
+    1. Only if Managed Identities are not supported for your scenario, create a client secret for the registered application as follows:
+        1. Select **Certificates & secrets** > **New client secret**.
+        2. Add a description, select a duration, and select **Add**.
+        > [!NOTE]
+        > Copy the secret's value for use in your client application code. This secret value is never displayed again after you leave this page.
 
     For the latest guidelines about adding client secrets in Microsoft Entra ID, see [Add credentials](/azure/active-directory/develop/quickstart-register-app#add-credentials) in the Azure documentation.
-
-   > [!IMPORTANT]  
-   > The sample code below uses a client secret to demonstrate how to obtain an access token. For production scenarios it is not recommended to authenticate using a client secret. Refer to the [identity platform security checklist](/entra/identity-platform/identity-platform-integration-checklist#security) for the latest recommendations on secure authentication using Entra apps.
 
 1. Grant the registered application **AdminCenter.ReadWrite.All** permission to the **Dynamics 365 [!INCLUDE[prodadmincenter](../developer/includes/prodadmincenter.md)]** API as follows:
 
@@ -91,7 +93,19 @@ HTTP requests sent to the [!INCLUDE[prodadmincenter](../developer/includes/proda
 
 The following examples show how to obtain such a token using PowerShell. Using C# is straightforward.
 
-PowerShell example without prompt:
+PowerShell example using Managed Identity without prompt:
+
+```powershell
+# Load required assemblies
+Add-Type -Path "path\to\Azure.Identity.dll"
+Add-Type -Path "path\to\Azure.Core.dll"
+$miClientId = "<your-managed-identity-client-id>"  # Optional for system-assigned
+$credential = [Azure.Identity.ManagedIdentityCredential]::new($miClientId)
+$tokenRequestContext = [Azure.Core.TokenRequestContext]::new([string[]]@("996def3d-b36c-4153-8607-a6fd3c01b89f"))
+$token = $credential.GetToken($tokenRequestContext).Token
+```
+
+PowerShell example using a Client Secret without prompt:
 
 ```powershell
 $cred = [Microsoft.IdentityModel.Clients.ActiveDirectory.ClientCredential]::new($AppId, $AppSecret)
@@ -100,7 +114,7 @@ $token = $ctx.AcquireTokenAsync("996def3d-b36c-4153-8607-a6fd3c01b89f", $cred).G
  ```
 
 > [!NOTE]
-> In the PowerShell example above, the guid specified to acquire the token (996def3d-b36c-4153-8607-a6fd3c01b89f) is the resource ID of [!INCLUDE[prod_short](../developer/includes/prod_short.md)]. The example gets the client credential using the app secret, but the recommended way would be to rely on X.509 certificates.
+> In the PowerShell examples above, the guid specified to acquire the token (996def3d-b36c-4153-8607-a6fd3c01b89f) is the resource ID of [!INCLUDE[prod_short](../developer/includes/prod_short.md)].
 
 ### Calling [!INCLUDE[prodadmincenter](../developer/includes/prodadmincenter.md)] API OAuth2Flows
 
